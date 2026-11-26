@@ -9,7 +9,7 @@ import pytest
 from moto import mock_aws
 
 SRC = os.path.join(os.path.dirname(__file__), "..", "src", "handler.py")
-os.environ.update(DATA_BUCKET="eventory-data-test", TOKEN_SECRET="rahasia-uji",
+os.environ.update(DATA_BUCKET="eventory-data-test", TOKEN_SECRET="rahasia-uji", GOOGLE_CLIENT_ID="cid-uji",
                   AWS_DEFAULT_REGION="us-east-1", AWS_ACCESS_KEY_ID="test", AWS_SECRET_ACCESS_KEY="test")
 
 
@@ -86,3 +86,36 @@ def test_token_accepted_by_event_service(h):
     tok = call(h, "/auth/login", USER)[1]["token"]
     sub, is_org = events.caller({"headers": {"authorization": "Bearer " + tok}})
     assert sub and is_org is False
+
+
+# ---------------------------------------------------------------- masuk dengan Google
+def google_info(**over):
+    import time
+    return {"aud": "cid-uji", "iss": "https://accounts.google.com", "email": "Sari@Gmail.com",
+            "email_verified": "true", "exp": str(int(time.time()) + 600), **over}
+
+
+def test_google_login_creates_participant(h, monkeypatch):
+    monkeypatch.setattr(h, "tokeninfo", lambda c: google_info())
+    code, out = call(h, "/auth/google", {"credential": "x"})
+    assert code == 200 and out["email"] == "sari@gmail.com" and out["isOrganizer"] is False
+    code, again = call(h, "/auth/google", {"credential": "x"})
+    assert code == 200 and again["sub"] == out["sub"]   # login kedua memakai akun yang sama
+
+
+@pytest.mark.parametrize("bad", [{"aud": "client-lain"}, {"email_verified": "false"},
+                                 {"iss": "evil.example"}, {"exp": "1"}])
+def test_google_login_rejects_bad_token(h, monkeypatch, bad):
+    monkeypatch.setattr(h, "tokeninfo", lambda c: google_info(**bad))
+    assert call(h, "/auth/google", {"credential": "x"})[0] == 401
+
+
+def test_google_login_rejects_unverifiable_token(h, monkeypatch):
+    monkeypatch.setattr(h, "tokeninfo", lambda c: None)
+    assert call(h, "/auth/google", {"credential": "x"})[0] == 401
+
+
+def test_google_account_cannot_password_login(h, monkeypatch):
+    monkeypatch.setattr(h, "tokeninfo", lambda c: google_info())
+    call(h, "/auth/google", {"credential": "x"})
+    assert call(h, "/auth/login", {"email": "sari@gmail.com", "password": "apasaja123"})[0] == 401

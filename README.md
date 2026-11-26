@@ -35,7 +35,7 @@ Sandbox hanya mengizinkan layanan tertentu: CloudFormation, CloudFront, CloudShe
 |-----------|----------------------|
 | Backend Express di Azure App Service | AWS Lambda + Function URL |
 | MongoDB Atlas | Amazon S3 (file JSON) |
-| Login JWT, bcrypt, dan Google | `auth-service`: token HMAC, PBKDF2, peran `penyelenggara` |
+| Login JWT, bcrypt, dan Google | `auth-service`: token HMAC, PBKDF2, Masuk dengan Google, peran `penyelenggara` |
 | Supabase Storage untuk poster | Amazon S3 + presigned URL |
 | Frontend Next.js di Azure | Website statis di Amazon S3 + CloudFront |
 | Log server | CloudWatch Logs, CloudWatch Alarm + SNS |
@@ -74,6 +74,7 @@ Endpoint acara ada di Function URL event-service (`EVENTS_URL`), login di `AUTH_
 | (poster) | `POST /uploads` | login | 200 | 400, 401 |
 | (daftar) | `POST /auth/register` | semua | 201 | 400, 409 |
 | (masuk) | `POST /auth/login` | semua | 200 + token | 401 |
+| (masuk Google) | `POST /auth/google` | semua | 200 + token | 401, 501 |
 
 Alur status mengikuti PassGo: `DRAFT` → `PUBLISHED` → `CANCELLED`. Acara yang sudah terbit tidak bisa kembali ke draf atau dihapus (409), dan acara yang dibatalkan tidak bisa diubah lagi. `sold` hanya akan diubah oleh booking-service, dan `quota` tidak boleh lebih kecil dari `sold`.
 
@@ -113,6 +114,7 @@ Sandbox berjalan per sesi. Saat timer sesi habis, semua resource di akun sandbox
    ```
    Script ini membuat kunci token acak (hanya saat stack pertama kali dibuat), menjalankan `aws cloudformation package` dan `deploy` untuk `template.yaml` (stack `eventory`), menyimpan output stack ke `.stack-outputs.env`, lalu meng-upload frontend ke S3 dan me-refresh cache CloudFront.
 4. Buka email dari **AWS Notifications** dan klik *Confirm subscription* supaya alarm bisa terkirim.
+   Opsional, untuk tombol **Masuk dengan Google**: buat OAuth Client ID tipe *Web application* di Google Cloud Console, isi *Authorized JavaScript origins* dengan Website URL, lalu deploy ulang dengan `GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com ./scripts/deploy.sh`. Akun Google yang baru masuk otomatis menjadi peserta.
 5. Uji end-to-end:
    ```bash
    ./scripts/smoke_test.sh
@@ -139,7 +141,8 @@ pytest services
 
 ## Keamanan
 
-- Endpoint tulis memeriksa token login dari `auth-service` (tanda tangan HMAC dan waktu kedaluwarsa). Lambda memeriksa lagi peran penyelenggara dan pemilik acara (`organizerId`).
+- Endpoint tulis memeriksa token login dari `auth-service` (tanda tangan HMAC dan waktu kedaluwarsa). Login Google diverifikasi ke Google (`aud` harus Client ID Eventory, email terverifikasi), lalu tetap diganti token Eventory.
+- Tampilan dibedakan per peran (tamu, peserta, penyelenggara), tetapi hak akses tetap diputuskan Lambda. Lambda memeriksa lagi peran penyelenggara dan pemilik acara (`organizerId`).
 - Password tidak pernah disimpan apa adanya, hanya hash PBKDF2-SHA256 dengan salt acak per akun. Kunci token disimpan sebagai parameter `NoEcho` dan environment variable Lambda.
 - Ketiga Lambda memakai `LabRole` karena sandbox tidak mengizinkan membuat role. Ini lebih longgar dari izin minimum per fungsi yang saya rencanakan di akun biasa.
 - Ketiga bucket S3 privat; hanya CloudFront (OAC, dibatasi ARN distribusi) yang boleh membaca bucket frontend dan poster. Bucket data tidak bisa dibaca dari luar sama sekali. Presigned URL berlaku 5 menit dan hanya untuk tipe gambar.

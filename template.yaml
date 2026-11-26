@@ -17,6 +17,10 @@ Parameters:
     NoEcho: true
     MinLength: 32
     Description: Kunci HMAC untuk menandatangani token login (dibuat acak oleh scripts/deploy.sh)
+  GoogleClientId:
+    Type: String
+    Default: ""
+    Description: OAuth Client ID Google untuk "Masuk dengan Google" (kosong = fitur mati)
 
 Globals:
   Function:
@@ -94,6 +98,9 @@ Resources:
       FunctionName: eventory-auth-service
       Description: Daftar dan masuk akun (pengganti Cognito)
       CodeUri: services/auth-service/src/
+      Environment:
+        Variables:
+          GOOGLE_CLIENT_ID: !Ref GoogleClientId
       MemorySize: 256   # hash PBKDF2 butuh CPU, memori lebih besar = CPU lebih cepat
       LoggingConfig:
         LogGroup: !Ref AuthLogs

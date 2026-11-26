@@ -2,8 +2,10 @@
 
 Menggantikan Cognito karena sandbox AWS Academy tidak menyediakan Cognito. Data user disimpan di
 S3 (users/{email}.json), password di-hash PBKDF2, dan token ditandatangani HMAC-SHA256.
+Masuk dengan Google (SSO): ID token Google diverifikasi lewat endpoint tokeninfo Google.
 """
 import base64, hashlib, hmac, json, os, re, secrets, time, uuid
+import urllib.error, urllib.parse, urllib.request
 from datetime import datetime, timezone
 import boto3
 from botocore.exceptions import ClientError
@@ -11,6 +13,7 @@ from botocore.exceptions import ClientError
 s3 = boto3.client("s3")
 BUCKET = os.environ["DATA_BUCKET"]
 SECRET = os.environ["TOKEN_SECRET"].encode()
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 TTL = 3600         # detik, token berlaku 1 jam
 ITERATIONS = 100_000
 EMAIL = re.compile(r"[^@\s/]+@[^@\s/]+\.[^@\s/]+")
@@ -32,6 +35,44 @@ def load_user(email):
     except s3.exceptions.NoSuchKey:
         return None
 
+def issue(user):
+    claims = {"sub": user["sub"], "email": user["email"], "org": user.get("isOrganizer") is True,
+              "exp": int(time.time()) + TTL}
+    return resp(200, {"token": sign(claims), "sub": claims["sub"], "email": claims["email"],
+                      "isOrganizer": claims["org"], "exp": claims["exp"]})
+
+def tokeninfo(credential):
+    """Minta Google memeriksa tanda tangan ID token. None jika token tidak valid."""
+    url = "https://oauth2.googleapis.com/tokeninfo?" + urllib.parse.urlencode({"id_token": credential})
+    try:
+        with urllib.request.urlopen(url, timeout=5) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError:
+        return None
+
+def google_login(credential):
+    if not GOOGLE_CLIENT_ID:
+        return resp(501, {"message": "Masuk dengan Google belum diaktifkan."})
+    info = tokeninfo(credential) if credential else None
+    if (not info or info.get("aud") != GOOGLE_CLIENT_ID
+            or info.get("iss") not in ("accounts.google.com", "https://accounts.google.com")
+            or str(info.get("email_verified")).lower() != "true"
+            or int(info.get("exp", 0)) < time.time()):
+        return resp(401, {"message": "Login Google tidak valid. Coba lagi."})
+    email = info["email"].strip().lower()
+    user = load_user(email)
+    if not user:  # akun baru lewat Google selalu peserta; peran penyelenggara tetap lewat add_organizer.sh
+        user = {"sub": str(uuid.uuid4()), "email": email, "provider": "google",
+                "isOrganizer": False, "createdAt": datetime.now(timezone.utc).isoformat()}
+        try:
+            s3.put_object(Bucket=BUCKET, Key=f"users/{email}.json", Body=json.dumps(user),
+                          ContentType="application/json", IfNoneMatch="*")
+        except ClientError as e:
+            if e.response["Error"]["Code"] not in ("PreconditionFailed", "ConditionalRequestConflict"):
+                raise
+            user = load_user(email)  # dibuat bersamaan oleh request lain
+    return issue(user)
+
 def lambda_handler(event, context):
     http = event["requestContext"]["http"]
     if http["method"] != "POST":
@@ -40,6 +81,9 @@ def lambda_handler(event, context):
     body = json.loads(base64.b64decode(raw) if event.get("isBase64Encoded") else raw)
     email = str(body.get("email", "")).strip().lower()
     password = str(body.get("password", ""))
+
+    if http["path"] == "/auth/google":
+        return google_login(str(body.get("credential", "")))
 
     if http["path"] == "/auth/register":
         if not EMAIL.fullmatch(email):
@@ -62,12 +106,11 @@ def lambda_handler(event, context):
     if http["path"] == "/auth/login":
         user = load_user(email) if EMAIL.fullmatch(email) else None
         # tetap menghitung hash walau user tidak ada supaya waktu respons tidak membocorkan email terdaftar
-        got = hash_pw(password, bytes.fromhex(user["salt"]) if user else DUMMY_SALT)
-        if not user or not hmac.compare_digest(got, user["hash"]):
+        # akun Google tidak punya password, jadi login password selalu gagal untuknya
+        has_pw = bool(user and user.get("hash"))
+        got = hash_pw(password, bytes.fromhex(user["salt"]) if has_pw else DUMMY_SALT)
+        if not has_pw or not hmac.compare_digest(got, user["hash"]):
             return resp(401, {"message": "Email atau password salah."})
-        claims = {"sub": user["sub"], "email": email, "org": user.get("isOrganizer") is True,
-                  "exp": int(time.time()) + TTL}
-        return resp(200, {"token": sign(claims), "sub": claims["sub"], "email": email,
-                          "isOrganizer": claims["org"], "exp": claims["exp"]})
+        return issue(user)
 
     return resp(404, {"message": "endpoint tidak ditemukan"})

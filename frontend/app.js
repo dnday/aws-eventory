@@ -96,9 +96,7 @@ $("auth-form").addEventListener("submit", async (ev) => {
       say("auth-message", "Akun dibuat. Silakan masuk.");
     } else {
       await Auth.signIn(email, password);
-      $("auth-form").reset();
-      say("message", "");
-      if (location.hash === "#dasbor") route(); else location.hash = "dasbor";
+      afterLogin();
     }
   } catch (e) {
     say("auth-message", e.message, true);
@@ -115,6 +113,25 @@ $("logout-btn").onclick = () => {
   say("message", "Kamu sudah keluar.");
   if (location.hash === "#katalog") route(); else location.hash = "katalog";
 };
+
+// Masuk dengan Google (SSO). Tombol hanya muncul jika deploy diberi GOOGLE_CLIENT_ID.
+async function afterLogin() {
+  $("auth-form").reset();
+  say("message", "");
+  if (location.hash === "#dasbor") route(); else location.hash = "dasbor";
+}
+function initGoogle() {
+  if (!CFG.googleClientId || !window.google?.accounts?.id) return;
+  google.accounts.id.initialize({
+    client_id: CFG.googleClientId,
+    callback: async ({ credential }) => {
+      try { await Auth.signInGoogle(credential); afterLogin(); } catch (e) { say("auth-message", e.message, true); }
+    },
+  });
+  google.accounts.id.renderButton($("google-btn"), { theme: "outline", size: "large", text: "signin_with", locale: "id", width: 300 });
+  $("sso").hidden = false;
+}
+window.onGoogleLibraryLoad = initGoogle;
 
 // ------------------------------------------------------------------ acara tersimpan (peserta)
 // ponytail: disimpan di browser per akun; pindah ke S3 (users/{email}.json) kalau perlu lintas perangkat
@@ -426,4 +443,5 @@ $("cancel-btn").onclick = resetForm;
 $("filter-category").onchange = render; // satu listener untuk semua kategori + "Gratis saja"
 setAuthMode("login");
 route();
+initGoogle(); // jika library Google sudah termuat lebih dulu
 load();

@@ -39,6 +39,8 @@ aws cloudformation package --template-file "$ROOT/template.yaml" \
 
 # Kunci token login dibuat sekali saat stack pertama dibuat; deploy ulang memakai nilai lama.
 PARAMS=("AlertEmail=$ALERT_EMAIL")
+# Opsional: GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com untuk tombol "Masuk dengan Google"
+[ -n "${GOOGLE_CLIENT_ID:-}" ] && PARAMS+=("GoogleClientId=$GOOGLE_CLIENT_ID")
 if ! aws cloudformation describe-stacks --stack-name "$STACK" >/dev/null 2>&1; then
   PARAMS+=("TokenSecret=$(openssl rand -hex 32)")
 fi
@@ -61,6 +63,8 @@ MEDIA_URL=$(out MediaUrl); MEDIA_URL=${MEDIA_URL%/}
 WEBSITE_URL=$(out WebsiteUrl)
 DIST_ID=$(out DistributionId)
 FRONTEND_BUCKET=$(out FrontendBucketName)
+GOOGLE_CLIENT_ID=$(aws cloudformation describe-stacks --stack-name "$STACK"   --query "Stacks[0].Parameters[?ParameterKey=='GoogleClientId'].ParameterValue" --output text)
+[ "$GOOGLE_CLIENT_ID" = "None" ] && GOOGLE_CLIENT_ID=""
 cat > "$ROOT/.stack-outputs.env" <<EOF
 REGION=$REGION
 STACK=$STACK
@@ -82,7 +86,8 @@ cat > "$TMP/config.js" <<EOF
 window.APP_CONFIG = {
   authUrl: "$AUTH_URL",
   eventsUrl: "$EVENTS_URL",
-  mediaUrl: "$MEDIA_URL"
+  mediaUrl: "$MEDIA_URL",
+  googleClientId: "$GOOGLE_CLIENT_ID"
 };
 EOF
 aws s3 sync "$TMP" "s3://$FRONTEND_BUCKET" --delete >/dev/null

@@ -35,6 +35,10 @@
         <button data-tab="login" class="tab active">Masuk</button>
         <button data-tab="signup" class="tab">Daftar</button>
       </div>
+      <div id="sso" hidden>
+        <div id="google-btn"></div>
+        <p class="or">atau dengan email</p>
+      </div>
       <form id="auth-form">
         <label>Email <input id="auth-email" type="email" required autocomplete="username"></label>
         <label>Password
@@ -148,6 +152,7 @@
     </section>
   </main>
 
+  <script src="https://accounts.google.com/gsi/client" async></script>
   <script src="config.js"></script>
   <script src="auth.js"></script>
   <script src="app.js"></script>
