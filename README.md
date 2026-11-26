@@ -104,7 +104,7 @@ Sandbox berjalan per sesi. Saat timer sesi habis, semua resource di akun sandbox
 1. Buka AWS Academy > **Cloud Foundations** > Modules > **Sandbox**, klik **Start Lab**, tunggu sampai statusnya *ready*, lalu klik **AWS** untuk membuka console. Pastikan region **N. Virginia (`us-east-1`)**.
 2. Buka **CloudShell** (ikon `>_` di bar atas console), lalu clone repository:
    ```bash
-   git clone https://github.com/<username>/eventory.git && cd eventory
+   git clone https://github.com/dnday/aws-eventory.git && cd aws-eventory
    chmod +x scripts/*.sh
    ```
 3. Deploy (pertama kali sekitar 5 sampai 10 menit karena CloudFront):

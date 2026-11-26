@@ -4,13 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Eventory</title>
+  <meta name="color-scheme" content="light dark">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
     <div class="wrap head">
       <div>
-        <h1>Eventory</h1>
+        <h1><span class="logo" aria-hidden="true"></span>Eventory</h1>
         <p>Seminar, workshop, konser, dan lomba di kampus dalam satu tempat.</p>
       </div>
       <div id="account">
@@ -98,18 +102,20 @@
 
     <section>
       <div class="toolbar">
-        <h2>Acara</h2>
-        <select id="filter-category" aria-label="Filter kategori">
-          <option value="">Semua kategori</option>
-          <option value="SEMINAR">Seminar</option>
-          <option value="WORKSHOP">Workshop</option>
-          <option value="KONSER">Konser</option>
-          <option value="LOMBA">Lomba</option>
-          <option value="LAINNYA">Lainnya</option>
-        </select>
-        <label class="inline"><input type="checkbox" id="only-free"> Gratis saja</label>
+        <h2>Acara mendatang <span id="count" class="count"></span></h2>
+        <fieldset id="filter-category" class="chips" aria-label="Filter kategori">
+          <label><input type="radio" name="cat" value="" checked><span>Semua</span></label>
+          <label><input type="radio" name="cat" value="SEMINAR"><span>Seminar</span></label>
+          <label><input type="radio" name="cat" value="WORKSHOP"><span>Workshop</span></label>
+          <label><input type="radio" name="cat" value="KONSER"><span>Konser</span></label>
+          <label><input type="radio" name="cat" value="LOMBA"><span>Lomba</span></label>
+          <label><input type="radio" name="cat" value="LAINNYA"><span>Lainnya</span></label>
+          <label class="free"><input type="checkbox" id="only-free"><span>Gratis saja</span></label>
+        </fieldset>
       </div>
-      <div id="list" class="grid"></div>
+      <div id="list" class="grid" aria-busy="true">
+        <div class="card skeleton"></div><div class="card skeleton"></div><div class="card skeleton"></div>
+      </div>
     </section>
   </main>
 

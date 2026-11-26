@@ -91,15 +91,22 @@ function el(tag, cls, text) {
 
 function card(e) {
   const art = el("article", "card" + (e.status === "CANCELLED" ? " muted" : ""));
+  const poster = el("div", "poster");
   if (e.posterUrl) {
     const img = el("img", "thumb");
     img.src = e.posterUrl;
     img.alt = "Poster " + e.title;
     img.loading = "lazy";
-    art.append(img);
+    poster.append(img);
   } else {
-    art.append(el("div", "thumb", LABEL[e.category] || e.category));
+    poster.append(el("div", "thumb", LABEL[e.category] || e.category));
   }
+  const d = new Date(e.startAt);
+  const date = el("div", "date");
+  date.append(el("b", null, d.getDate()), el("small", null, d.toLocaleString("id-ID", { month: "short" })));
+  poster.append(date);
+  art.append(poster);
+
   const body = el("div", "card-body");
   const tags = el("div", "tags");
   tags.append(el("span", "pill", LABEL[e.category] || e.category));
@@ -107,25 +114,41 @@ function card(e) {
   body.append(tags, el("h3", null, e.title));
   body.append(el("p", "meta", tanggal(e.startAt)));
   body.append(el("p", "meta", e.venue + (e.organizerName ? " · " + e.organizerName : "")));
-  const foot = el("div", "card-foot");
-  foot.append(el("span", "price", rupiah(e.price)));
-  const left = Number(e.quota) - Number(e.sold || 0);
-  foot.append(el("span", "quota", left > 0 ? `Sisa ${left} dari ${e.quota} tiket` : "Tiket habis"));
-  body.append(foot);
   if (e.description) body.append(el("p", "desc", e.description));
   art.append(body);
+
+  // bagian bawah tiket: harga + sisa kuota
+  const foot = el("div", "card-foot");
+  foot.append(el("span", "price" + (Number(e.price) === 0 ? " free" : ""), rupiah(e.price)));
+  const quota = Number(e.quota);
+  const left = quota - Number(e.sold || 0);
+  const q = el("div", "quota" + (left > 0 ? "" : " out"), left > 0 ? `Sisa ${left} dari ${quota} tiket` : "Tiket habis");
+  const bar = el("div", "bar" + (left / quota <= 0.2 ? " low" : ""));
+  const fill = el("i");
+  fill.style.width = Math.max(0, Math.min(100, (left / quota) * 100)) + "%";
+  bar.append(fill);
+  q.append(bar);
+  foot.append(q);
+  art.append(foot);
   return art;
 }
 
 function render() {
-  const cat = $("filter-category").value;
+  const cat = document.querySelector('input[name="cat"]:checked').value;
   const onlyFree = $("only-free").checked;
   const shown = events
     .filter((e) => !cat || e.category === cat)
     .filter((e) => !onlyFree || Number(e.price) === 0)
     .sort((a, b) => a.startAt.localeCompare(b.startAt));
+  $("list").setAttribute("aria-busy", "false");
+  $("count").textContent = events.length ? `${shown.length} acara` : "";
   $("list").replaceChildren(...shown.map(card));
-  if (!shown.length) $("list").innerHTML = '<p class="empty">Belum ada acara.</p>';
+  if (!shown.length) {
+    const filtered = events.length > 0;
+    $("list").replaceChildren(el("p", "empty", filtered
+      ? "Tidak ada acara yang cocok dengan filter ini."
+      : "Belum ada acara yang terbit. Cek lagi nanti, ya."));
+  }
 }
 
 async function load() {
@@ -133,6 +156,7 @@ async function load() {
     events = await api("GET", "/events");
     render();
   } catch (e) {
+    $("list").replaceChildren(el("p", "empty", "Katalog tidak bisa dimuat. Muat ulang halaman sebentar lagi."));
     say("message", "Gagal memuat acara: " + e.message, true);
   }
 }
@@ -279,8 +303,7 @@ $("event-form").addEventListener("submit", async (ev) => {
 });
 
 $("cancel-btn").onclick = resetForm;
-$("filter-category").onchange = render;
-$("only-free").onchange = render;
+$("filter-category").onchange = render; // satu listener untuk semua chip + "Gratis saja"
 setAuthMode("login");
 refreshAccount();
 load();
