@@ -151,5 +151,5 @@ pytest services
 
 - [x] Week 12: use case, desain arsitektur, entitas dan endpoint CRUD, template infrastruktur, starter code, frontend, script deploy dan uji
 - [x] Week 12: penyesuaian ke sandbox AWS Academy (Function URL, S3, auth-service, LabRole)
-- [ ] Week 12: deploy di sandbox dan evidence
+- [x] Week 12: deploy di sandbox dan evidence (smoke test 21 lulus, 0 gagal)
 - [ ] Berikutnya: booking-service (pemesanan anti overselling)
