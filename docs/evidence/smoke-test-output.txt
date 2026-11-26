@@ -1,5 +1,5 @@
-Smoke test Eventory  |  2026-11-26T06:03:02Z
-Events: https://5f6hoqmnhssj5go7hhr4yeiori0cnbrp.lambda-url.us-east-1.on.aws   Website: https://d2lmuqn9qv5rie.cloudfront.net
+Smoke test Eventory  |  2026-11-26T11:02:34Z
+Events: https://enybe4c4bwkdopmrirrumzrkjy0fjorq.lambda-url.us-east-1.on.aws   Website: https://d20uk2oo3n9qq5.cloudfront.net
 
 [1] Auth dan peran
 > POST auth/login {"email":"smoke-peserta@eventory.test","password":"salah-password1"}
@@ -16,7 +16,7 @@ Events: https://5f6hoqmnhssj5go7hhr4yeiori0cnbrp.lambda-url.us-east-1.on.aws   W
 > POST events {"title":"Seminar Cloud Computing 2026","category":"SEMINAR","venue":"Auditorium Merapi","startAt":"2026-12-10T09:00","price":25000,"quota":150}
 < 201 {"title": "Seminar Cloud Computing 2026", "category": "SEMINAR", "venue": "Auditorium Merapi", "startAt": "2026-12-10T09:00", "price": 25000, "quota": 150, "eve
   OK    POST /events oleh penyelenggara -> 201
-> GET events/0155432f-8690-4412-9699-7f9b34040148 
+> GET events/821be23b-6060-4ff8-a9ac-2728cf39df55 
 < 404 {"message": "acara tidak ditemukan"}
   OK    Draf belum terlihat publik -> 404
 > GET me/events 
@@ -24,18 +24,18 @@ Events: https://5f6hoqmnhssj5go7hhr4yeiori0cnbrp.lambda-url.us-east-1.on.aws   W
   OK    GET /me/events (draf milik sendiri) -> 200
 
 [3] Update dan alur status
-> PUT events/0155432f-8690-4412-9699-7f9b34040148 {"status":"PUBLISHED","quota":200}
+> PUT events/821be23b-6060-4ff8-a9ac-2728cf39df55 {"status":"PUBLISHED","quota":200}
 < 200 {"title": "Seminar Cloud Computing 2026", "category": "SEMINAR", "venue": "Auditorium Merapi", "startAt": "2026-12-10T09:00", "price": 25000, "quota": 200, "eve
   OK    Publikasikan acara -> 200
-> PUT events/0155432f-8690-4412-9699-7f9b34040148 {"price":1}
+> PUT events/821be23b-6060-4ff8-a9ac-2728cf39df55 {"price":1}
 < 403 {"message": "hanya penyelenggara acara ini yang boleh mengubah atau menghapus"}
   OK    PUT oleh penyelenggara lain ditolak -> 403
-> PUT events/0155432f-8690-4412-9699-7f9b34040148 {"status":"DRAFT"}
+> PUT events/821be23b-6060-4ff8-a9ac-2728cf39df55 {"status":"DRAFT"}
 < 409 {"message": "status tidak bisa diubah dari PUBLISHED ke DRAFT"}
   OK    Kembali ke DRAFT ditolak -> 409
 
 [4] Read (publik)
-> GET events/0155432f-8690-4412-9699-7f9b34040148 
+> GET events/821be23b-6060-4ff8-a9ac-2728cf39df55 
 < 200 {"title": "Seminar Cloud Computing 2026", "category": "SEMINAR", "venue": "Auditorium Merapi", "startAt": "2026-12-10T09:00", "price": 25000, "quota": 200, "eve
   OK    GET /events/{id} -> 200
 > GET events 
@@ -49,25 +49,25 @@ Events: https://5f6hoqmnhssj5go7hhr4yeiori0cnbrp.lambda-url.us-east-1.on.aws   W
 
 [6] Upload poster (media-service -> S3 -> CloudFront)
 > POST uploads {"contentType":"image/png"}
-< 200 {"uploadUrl": "https://eventory-photobucket-jmwx5uzljy5i.s3.amazonaws.com/photos/f9bfd4ce-2ec4-4d06-9b45-42160d9fafab/8c1c49a9-4ad5-400d-aefe-0a603c783dcc.png?X
+< 200 {"uploadUrl": "https://eventory-photobucket-kh1h72hv4q2b.s3.amazonaws.com/photos/fe9a05de-dd5e-4f73-a14b-6044a79dc79a/fe4fee0d-9e33-49a1-a998-a50d86008a72.png?X
   OK    POST /uploads (presigned URL) -> 200
   OK    PUT poster ke S3 lewat presigned URL -> 200
   OK    GET poster lewat CloudFront (HTTPS) -> 200
   OK    Akses langsung ke bucket S3 diblokir -> 403
 
 [7] Delete
-> DELETE events/0155432f-8690-4412-9699-7f9b34040148 
+> DELETE events/821be23b-6060-4ff8-a9ac-2728cf39df55 
 < 409 {"message": "hanya acara berstatus DRAFT yang bisa dihapus, batalkan acara yang sudah terbit"}
   OK    Hapus acara yang sudah terbit ditolak -> 409
-> PUT events/0155432f-8690-4412-9699-7f9b34040148 {"status":"CANCELLED"}
+> PUT events/821be23b-6060-4ff8-a9ac-2728cf39df55 {"status":"CANCELLED"}
 < 200 {"title": "Seminar Cloud Computing 2026", "category": "SEMINAR", "venue": "Auditorium Merapi", "startAt": "2026-12-10T09:00", "price": 25000, "quota": 200, "eve
   OK    Batalkan acara -> 200
 > POST events {"title":"Seminar Cloud Computing 2026","category":"SEMINAR","venue":"Auditorium Merapi","startAt":"2026-12-10T09:00","price":25000,"quota":150}
 < 201 {"title": "Seminar Cloud Computing 2026", "category": "SEMINAR", "venue": "Auditorium Merapi", "startAt": "2026-12-10T09:00", "price": 25000, "quota": 150, "eve
-> DELETE events/8a494f64-a909-4341-90d8-41f02ef55947 
+> DELETE events/7ee667ec-a7c1-4724-a823-655336035dc2 
 < 204 
   OK    DELETE draf -> 204
-> GET events/8a494f64-a909-4341-90d8-41f02ef55947 
+> GET events/7ee667ec-a7c1-4724-a823-655336035dc2 
 < 404 {"message": "acara tidak ditemukan"}
   OK    GET setelah dihapus -> 404
 
@@ -75,13 +75,9 @@ Events: https://5f6hoqmnhssj5go7hhr4yeiori0cnbrp.lambda-url.us-east-1.on.aws   W
   OK    Frontend lewat CloudFront -> 200
 
 [9] Storage dan log
-Acara di bucket data       : 2
+Acara di bucket data       : 1
 Akun di bucket data        : 3
-Objek di bucket poster     : 2
+Objek di bucket poster     : 1
 Log event-service terakhir:
-2026-11-26T05:57:12.840000+00:00 2026/11/26/eventory-event-service[$LATEST]b1379c8dc228464d9d70a789b9908338 REPORT RequestId: 5bebd1b9-87b3-41ce-bdf5-30b68ea2b6c6	Duration: 316.32 ms	Billed Duration: 317 ms	Memory Size: 128 MB	Max Memory Used: 93 MB
-2026-11-26T05:59:06.632000+00:00 2026/11/26/eventory-event-service[$LATEST]b1379c8dc228464d9d70a789b9908338 START RequestId: c18b00b5-809c-47e9-a9fa-ef430ea27f74 Version: $LATEST
-2026-11-26T05:59:06.920000+00:00 2026/11/26/eventory-event-service[$LATEST]b1379c8dc228464d9d70a789b9908338 END RequestId: c18b00b5-809c-47e9-a9fa-ef430ea27f74
-2026-11-26T05:59:06.920000+00:00 2026/11/26/eventory-event-service[$LATEST]b1379c8dc228464d9d70a789b9908338 REPORT RequestId: c18b00b5-809c-47e9-a9fa-ef430ea27f74	Duration: 286.36 ms	Billed Duration: 287 ms	Memory Size: 128 MB	Max Memory Used: 93 MB
 
 Hasil: 21 lulus, 0 gagal
