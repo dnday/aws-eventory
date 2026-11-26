@@ -1,0 +1,339 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Eventory - platform tiket acara kampus (seminar, workshop, konser, lomba).
+  Track C Serverless untuk sandbox AWS Academy Cloud Foundations: Lambda Function URL + S3 (data
+  JSON dan poster) + CloudFront, CloudWatch Logs, CloudWatch Alarm + SNS. Semua Lambda memakai
+  LabRole karena sandbox tidak mengizinkan membuat IAM role.
+
+Parameters:
+  AlertEmail:
+    Type: String
+    Description: Email penerima notifikasi alarm
+    AllowedPattern: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+    ConstraintDescription: harus berupa alamat email
+  TokenSecret:
+    Type: String
+    NoEcho: true
+    MinLength: 32
+    Description: Kunci HMAC untuk menandatangani token login (dibuat acak oleh scripts/deploy.sh)
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Handler: handler.lambda_handler
+    Timeout: 10
+    MemorySize: 128
+    Environment:
+      Variables:
+        DATA_BUCKET: !Ref DataBucket
+        TOKEN_SECRET: !Ref TokenSecret
+
+Resources:
+  # ---------------------------------------------------------------- data
+  DataBucket:   # data acara (events/) dan akun (users/), tidak pernah dibaca publik
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+
+  PhotoBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods: [PUT]
+            AllowedOrigins: ["*"]
+            AllowedHeaders: ["*"]
+            MaxAge: 3000
+
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+
+  # ---------------------------------------------------------------- services
+  AuthLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/eventory-auth-service
+      RetentionInDays: 14
+
+  AuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/LabRole   # sandbox tidak bisa membuat role
+      FunctionUrlConfig:   # endpoint HTTPS publik langsung ke Lambda (pengganti API Gateway)
+        AuthType: NONE
+        Cors:
+          AllowOrigins: ["*"]
+          AllowMethods: ["*"]
+          AllowHeaders: [content-type, authorization]
+          MaxAge: 600
+      FunctionName: eventory-auth-service
+      Description: Daftar dan masuk akun (pengganti Cognito)
+      CodeUri: services/auth-service/src/
+      MemorySize: 256   # hash PBKDF2 butuh CPU, memori lebih besar = CPU lebih cepat
+      LoggingConfig:
+        LogGroup: !Ref AuthLogs
+
+  EventLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/eventory-event-service
+      RetentionInDays: 14
+
+  EventFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/LabRole   # sandbox tidak bisa membuat role
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins: ["*"]
+          AllowMethods: ["*"]
+          AllowHeaders: [content-type, authorization]
+          MaxAge: 600
+      FunctionName: eventory-event-service
+      Description: CRUD data acara
+      CodeUri: services/event-service/src/
+      LoggingConfig:
+        LogGroup: !Ref EventLogs
+
+  MediaLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/eventory-media-service
+      RetentionInDays: 14
+
+  MediaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/LabRole   # sandbox tidak bisa membuat role
+      FunctionUrlConfig:
+        AuthType: NONE
+        Cors:
+          AllowOrigins: ["*"]
+          AllowMethods: ["*"]
+          AllowHeaders: [content-type, authorization]
+          MaxAge: 600
+      FunctionName: eventory-media-service
+      Description: Presigned URL untuk upload poster acara ke S3
+      CodeUri: services/media-service/src/
+      LoggingConfig:
+        LogGroup: !Ref MediaLogs
+      Environment:
+        Variables:
+          PHOTO_BUCKET: !Ref PhotoBucket
+          PHOTO_BASE_URL: !Sub https://${Distribution.DomainName}
+
+  # Function URL publik butuh izin InvokeFunctionUrl (dibuat SAM) dan InvokeFunction (di bawah)
+  AuthUrlInvoke:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref AuthFunction
+      Principal: "*"
+      InvokedViaFunctionUrl: true
+
+  EventUrlInvoke:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref EventFunction
+      Principal: "*"
+      InvokedViaFunctionUrl: true
+
+  MediaUrlInvoke:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref MediaFunction
+      Principal: "*"
+      InvokedViaFunctionUrl: true
+
+  # ---------------------------------------------------------------- CDN (HTTPS, bucket tetap privat)
+  CloudFrontOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub ${AWS::StackName}-oac
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: Eventory - frontend dan poster acara
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_100
+        HttpVersion: http2
+        Origins:
+          - Id: frontend
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt CloudFrontOAC.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+          - Id: photos
+            DomainName: !GetAtt PhotoBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt CloudFrontOAC.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        DefaultCacheBehavior:
+          TargetOriginId: frontend
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6   # Managed-CachingOptimized
+          AllowedMethods: [GET, HEAD]
+          Compress: true
+        CacheBehaviors:
+          - PathPattern: photos/*
+            TargetOriginId: photos
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+            AllowedMethods: [GET, HEAD]
+            Compress: true
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontRead
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub ${FrontendBucket.Arn}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}
+
+  PhotoBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref PhotoBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontRead
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub ${PhotoBucket.Arn}/photos/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}
+
+  # ---------------------------------------------------------------- monitoring
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: eventory-alerts
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref AlertEmail
+
+  EventErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: eventory-event-service-errors
+      AlarmDescription: Lambda event-service mengalami error dalam 5 menit terakhir
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref EventFunction
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+
+  MediaErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: eventory-media-service-errors
+      AlarmDescription: Lambda media-service mengalami error dalam 5 menit terakhir
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref MediaFunction
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+
+  AuthErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: eventory-auth-service-errors
+      AlarmDescription: Lambda auth-service mengalami error dalam 5 menit terakhir
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref AuthFunction
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref AlertTopic]
+
+Outputs:
+  AuthUrl:
+    Description: Function URL auth-service (/auth/register, /auth/login)
+    Value: !GetAtt AuthFunctionUrl.FunctionUrl
+  EventsUrl:
+    Description: Function URL event-service (/events, /events/{id}, /me/events)
+    Value: !GetAtt EventFunctionUrl.FunctionUrl
+  MediaUrl:
+    Description: Function URL media-service (/uploads)
+    Value: !GetAtt MediaFunctionUrl.FunctionUrl
+  WebsiteUrl:
+    Description: URL frontend (HTTPS lewat CloudFront)
+    Value: !Sub https://${Distribution.DomainName}
+  DistributionId:
+    Value: !Ref Distribution
+  FrontendBucketName:
+    Value: !Ref FrontendBucket
+  PhotoBucketName:
+    Value: !Ref PhotoBucket
+  DataBucketName:
+    Value: !Ref DataBucket
+  AlertTopicArn:
+    Value: !Ref AlertTopic
