@@ -1,0 +1,15 @@
+{
+  "version": "2.0",
+  "rawPath": "/events",
+  "requestContext": {
+    "http": {
+      "method": "POST",
+      "path": "/events"
+    }
+  },
+  "isBase64Encoded": false,
+  "body": "{\"title\": \"Seminar Cloud Computing 2026\", \"category\": \"SEMINAR\", \"venue\": \"Auditorium Merapi\", \"startAt\": \"2026-12-10T09:00\", \"price\": 25000, \"quota\": 150, \"organizerName\": \"HMTI\"}",
+  "headers": {
+    "authorization": "Bearer GANTI-DENGAN-TOKEN-DARI-/auth/login"
+  }
+}

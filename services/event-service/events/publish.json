@@ -1,0 +1,15 @@
+{
+  "version": "2.0",
+  "rawPath": "/events/GANTI-DENGAN-eventId",
+  "requestContext": {
+    "http": {
+      "method": "PUT",
+      "path": "/events/GANTI-DENGAN-eventId"
+    }
+  },
+  "isBase64Encoded": false,
+  "body": "{\"status\": \"PUBLISHED\", \"quota\": 200}",
+  "headers": {
+    "authorization": "Bearer GANTI-DENGAN-TOKEN-DARI-/auth/login"
+  }
+}

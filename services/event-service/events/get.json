@@ -1,0 +1,11 @@
+{
+  "version": "2.0",
+  "rawPath": "/events/GANTI-DENGAN-eventId",
+  "requestContext": {
+    "http": {
+      "method": "GET",
+      "path": "/events/GANTI-DENGAN-eventId"
+    }
+  },
+  "isBase64Encoded": false
+}

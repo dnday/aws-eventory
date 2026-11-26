@@ -1,0 +1,14 @@
+{
+  "version": "2.0",
+  "rawPath": "/me/events",
+  "requestContext": {
+    "http": {
+      "method": "GET",
+      "path": "/me/events"
+    }
+  },
+  "isBase64Encoded": false,
+  "headers": {
+    "authorization": "Bearer GANTI-DENGAN-TOKEN-DARI-/auth/login"
+  }
+}
