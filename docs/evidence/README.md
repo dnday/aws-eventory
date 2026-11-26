@@ -14,7 +14,7 @@ Semua screenshot diambil dari sandbox AWS Academy Cloud Foundations dalam satu s
 | 8 | `08-data-bucket.png` | Folder `events/` di bucket data | Storage |
 | 9 | `09a-s3-buckets.png`, `09b-s3-photos.png`, `09c-s3-block-public.png` | Daftar bucket, poster di `photos/`, dan Block Public Access: On | Storage + security |
 | 10 | `10-cloudfront.png` | CloudFront > distribusi Eventory > Origins (dua origin S3 dengan OAC) | CDN |
-| 11 | `11-website.png` | Website lewat URL CloudFront: katalog dengan dua acara terbit berposter dan acara uji yang dibatalkan | End-to-end |
+| 11 | `11-website.png`, `11b-website-organizer.png` | Website lewat URL CloudFront: katalog dengan dua acara terbit berposter, dan panel penyelenggara (Buat acara + Acara saya) setelah login sebagai akun demo | End-to-end |
 | 12 | `12-smoke-test.png` | Output `./scripts/smoke_test.sh`, "Hasil: 21 lulus, 0 gagal" | Konektivitas |
 | 13 | `13-cloudwatch-logs.png` | Log group `/aws/lambda/eventory-event-service` dengan log stream terbaru | Logging |
 | 14 | `14a-alarms.png`, `14b-sns.png` | Tiga alarm `eventory-*-errors` status OK dan topik `eventory-alerts` (subscription *Confirmed*) | Monitoring |
