@@ -1,0 +1,15 @@
+# kredensial dan konfigurasi lokal (jangan pernah di-commit)
+.aws/
+.env
+*.pem
+credentials
+
+# hasil build dan cache
+build/
+*.zip
+__pycache__/
+.pytest_cache/
+.venv/
+
+# output deploy (berbeda di tiap akun)
+.stack-outputs.env
