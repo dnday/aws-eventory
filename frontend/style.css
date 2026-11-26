@@ -1,0 +1,80 @@
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1f2933; background: #f5f6f8; }
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+header { background: #1f3864; color: #fff; padding: 20px 0; margin-bottom: 20px; }
+header h1 { margin: 0 0 4px; font-size: 1.6rem; }
+header p { margin: 0; opacity: .85; }
+h2 { font-size: 1.15rem; margin: 0 0 12px; }
+
+.panel { background: #fff; border: 1px solid #dde1e6; border-radius: 8px; padding: 16px; margin-bottom: 24px; }
+form label { display: block; font-size: .85rem; color: #52606d; margin-bottom: 10px; flex: 1; }
+input, select, textarea { display: block; width: 100%; margin-top: 4px; padding: 8px; font: inherit; color: inherit;
+  border: 1px solid #c7ccd3; border-radius: 6px; background: #fff; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; }
+.row > label { min-width: 160px; }
+.actions { align-items: flex-end; }
+button { padding: 9px 16px; font: inherit; border: 0; border-radius: 6px; background: #1f3864; color: #fff; cursor: pointer; }
+button.secondary { background: #e4e7eb; color: #1f2933; }
+button.danger { background: #fbe9e9; color: #a61b1b; }
+#message { margin: 8px 0 0; font-size: .9rem; color: #1e6b3a; min-height: 1.2em; }
+#message.error { color: #a61b1b; }
+
+.toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.toolbar h2 { margin: 0; margin-right: auto; }
+.toolbar select { width: auto; margin: 0; }
+label.inline { display: flex; align-items: center; gap: 6px; font-size: .9rem; }
+label.inline input { width: auto; margin: 0; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 40px; }
+.card { background: #fff; border: 1px solid #dde1e6; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+.card.muted { opacity: .65; }
+
+.card-body { padding: 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.card h3 { margin: 4px 0 0; font-size: 1rem; }
+.price { margin: 0; font-weight: 600; color: #1f3864; }
+.meta, .desc { margin: 0; font-size: .85rem; color: #52606d; }
+.card-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 8px; }
+.card-actions button { padding: 6px 10px; font-size: .85rem; }
+.badge { align-self: flex-start; font-size: .72rem; padding: 2px 8px; border-radius: 999px; background: #e3f2e8; color: #1e6b3a; }
+.badge.dipesan { background: #fff4d6; color: #8a5a00; }
+.badge.terjual { background: #e4e7eb; color: #52606d; }
+.empty { color: #7b8794; }
+
+/* akun dan login */
+.head { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+#account { display: flex; align-items: center; gap: 10px; font-size: .9rem; }
+button.light { background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.35); }
+.tabs { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 1px solid #dde1e6; }
+.tab { background: none; color: #52606d; border-radius: 6px 6px 0 0; padding: 8px 14px; }
+.tab.active { color: #1f3864; box-shadow: inset 0 -2px 0 #1f3864; font-weight: 600; }
+small { display: block; margin-top: 4px; color: #7b8794; }
+#auth-message { margin: 8px 0 0; font-size: .9rem; color: #1e6b3a; min-height: 1.2em; }
+#auth-message.error { color: #a61b1b; }
+.hint { margin: 0; color: #52606d; }
+button:disabled { opacity: .6; cursor: wait; }
+
+/* foto */
+.thumb { width: 100%; height: 150px; object-fit: cover; background: #e4e7eb; }
+div.thumb { display: flex; align-items: center; justify-content: center; color: #9aa5b1; font-size: .85rem; }
+
+/* katalog acara */
+.card .thumb { height: 170px; }
+div.thumb { font-weight: 600; color: #7b8794; background: linear-gradient(135deg, #e4e7eb, #f5f6f8); }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.pill { font-size: .72rem; padding: 2px 8px; border-radius: 999px; background: #eef1f4; color: #3e4c59; }
+.card-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 4px; }
+.quota { font-size: .8rem; color: #52606d; }
+.badge.draft { background: #eef1f4; color: #52606d; }
+.badge.published { background: #e3f2e8; color: #1e6b3a; }
+.badge.cancelled { background: #fbe9e9; color: #a61b1b; }
+.spaced { margin-top: 24px; }
+#message { margin: 0 0 16px; }
+
+/* panel penyelenggara */
+.mine { display: flex; flex-direction: column; gap: 8px; }
+.mine-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  border: 1px solid #dde1e6; border-radius: 8px; padding: 10px 12px; }
+.mine-info { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mine-row .card-actions { margin: 0; padding: 0; }
+#poster-preview { display: block; max-height: 140px; border-radius: 6px; margin: 0 0 10px; border: 1px solid #dde1e6; }

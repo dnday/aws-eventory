@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Eventory</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="wrap head">
+      <div>
+        <h1>Eventory</h1>
+        <p>Seminar, workshop, konser, dan lomba di kampus dalam satu tempat.</p>
+      </div>
+      <div id="account">
+        <span id="who" hidden></span>
+        <button id="login-btn" class="light">Masuk / Daftar</button>
+        <button id="logout-btn" class="light" hidden>Keluar</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="auth-panel" class="panel" hidden>
+      <div class="tabs">
+        <button data-tab="login" class="tab active">Masuk</button>
+        <button data-tab="signup" class="tab">Daftar</button>
+      </div>
+      <form id="auth-form">
+        <label>Email <input id="auth-email" type="email" required autocomplete="username"></label>
+        <label>Password
+          <input id="auth-password" type="password" minlength="8" required autocomplete="current-password">
+          <small data-only="signup">Minimal 8 karakter, ada huruf kecil dan angka.</small>
+        </label>
+        <div class="row actions">
+          <button type="submit" id="auth-submit">Masuk</button>
+          <button type="button" id="auth-close" class="secondary">Tutup</button>
+        </div>
+      </form>
+      <p id="auth-message" role="status"></p>
+    </section>
+
+    <section class="panel" id="organizer-panel" hidden>
+      <h2 id="form-title">Buat acara</h2>
+      <form id="event-form">
+        <input type="hidden" id="eventId">
+        <label>Nama acara
+          <input id="title" required maxlength="100" placeholder="Seminar Cloud Computing 2026">
+        </label>
+        <div class="row">
+          <label>Kategori
+            <select id="category" required>
+              <option value="SEMINAR">Seminar</option>
+              <option value="WORKSHOP">Workshop</option>
+              <option value="KONSER">Konser</option>
+              <option value="LOMBA">Lomba</option>
+              <option value="LAINNYA">Lainnya</option>
+            </select>
+          </label>
+          <label>Tempat
+            <input id="venue" required maxlength="80" placeholder="Auditorium Merapi">
+          </label>
+          <label>Waktu mulai
+            <input id="startAt" type="datetime-local" required>
+          </label>
+        </div>
+        <div class="row">
+          <label>Harga tiket (Rp, 0 = gratis)
+            <input id="price" type="number" min="0" step="1000" required placeholder="25000">
+          </label>
+          <label>Kuota
+            <input id="quota" type="number" min="1" step="1" required placeholder="150">
+          </label>
+          <label>Penyelenggara
+            <input id="organizerName" maxlength="60" placeholder="HMTI">
+          </label>
+        </div>
+        <label>Deskripsi
+          <textarea id="description" rows="2" placeholder="Pembicara, susunan acara, benefit"></textarea>
+        </label>
+        <label>Poster
+          <input id="poster" type="file" accept="image/jpeg,image/png,image/webp">
+        </label>
+        <input type="hidden" id="posterUrl">
+        <img id="poster-preview" alt="" hidden>
+        <div class="row actions">
+          <button type="submit" id="submit-btn">Simpan sebagai draf</button>
+          <button type="button" id="cancel-btn" class="secondary" hidden>Batal</button>
+        </div>
+      </form>
+
+      <h2 class="spaced">Acara saya</h2>
+      <div id="my-list" class="mine"></div>
+    </section>
+
+    <p id="message" role="status"></p>
+
+    <section>
+      <div class="toolbar">
+        <h2>Acara</h2>
+        <select id="filter-category" aria-label="Filter kategori">
+          <option value="">Semua kategori</option>
+          <option value="SEMINAR">Seminar</option>
+          <option value="WORKSHOP">Workshop</option>
+          <option value="KONSER">Konser</option>
+          <option value="LOMBA">Lomba</option>
+          <option value="LAINNYA">Lainnya</option>
+        </select>
+        <label class="inline"><input type="checkbox" id="only-free"> Gratis saja</label>
+      </div>
+      <div id="list" class="grid"></div>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="auth.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
