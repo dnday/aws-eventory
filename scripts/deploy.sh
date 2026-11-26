@@ -18,7 +18,7 @@ ARTIFACTS="eventory-artifacts-${ACCOUNT_ID}-${REGION}"
 echo "Account: $ACCOUNT_ID   Region: $REGION   Stack: $STACK"
 
 # 1. Bucket untuk artefak deploy (kode Lambda yang di-zip)
-if ! aws s3api head-bucket --bucket "$ARTIFACTS" 2>/dev/null; then
+if ! aws s3api head-bucket --bucket "$ARTIFACTS" >/dev/null 2>&1; then
   echo "[s3] membuat bucket artefak $ARTIFACTS"
   if [ "$REGION" = "us-east-1" ]; then
     aws s3api create-bucket --bucket "$ARTIFACTS" >/dev/null
